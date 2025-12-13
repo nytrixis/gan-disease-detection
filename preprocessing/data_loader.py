@@ -181,6 +181,64 @@ def get_dataloader(split='train', class_filter=None, batch_size=16, shuffle=True
         pin_memory=True if torch.cuda.is_available() else False
     )
 
+def get_gan_augmented_dataloader(split='train', synthetic_dir='data/synthetic/curated',
+                                 batch_size=16, shuffle=True, num_workers=2):
+    """
+    Get DataLoader with GAN-augmented dataset (real + synthetic images)
+    
+    Args:
+        split: 'train', 'val', or 'test'
+        synthetic_dir: Directory containing curated synthetic images
+        batch_size: batch size
+        shuffle: whether to shuffle
+        num_workers: number of workers
+    
+    Returns:
+        DataLoader with mixed real and synthetic images
+    """
+    metadata_path = 'data/splits/metadata.csv'
+    
+    if not os.path.exists(metadata_path):
+        raise FileNotFoundError("Metadata not found. Run create_splits() first.")
+    
+    # Load real images
+    df = pd.read_csv(metadata_path)
+    df = df[df['split'] == split]
+    
+    image_paths = df['image_path'].tolist()
+    labels = df['label'].tolist()
+    
+    # Add synthetic dermatofibroma images (only for training split)
+    if split == 'train' and os.path.exists(synthetic_dir):
+        synthetic_images = list(Path(synthetic_dir).glob('*.png'))
+        print(f"Found {len(synthetic_images)} synthetic images in {synthetic_dir}")
+        
+        for syn_img in synthetic_images:
+            image_paths.append(str(syn_img))
+            labels.append(1)  # Dermatofibroma label
+        
+        print(f"✓ Added {len(synthetic_images)} synthetic dermatofibroma images")
+        
+        # Calculate new class distribution
+        df_count = sum(1 for l in labels if l == 1)
+        nv_count = sum(1 for l in labels if l == 0)
+        imbalance_ratio = nv_count / df_count if df_count > 0 else 0
+        print(f"✓ New class distribution: Nevus={nv_count}, Dermatofibroma={df_count}")
+        print(f"✓ New imbalance ratio: {imbalance_ratio:.1f}:1 (from 56.7:1)\n")
+    
+    # Use classifier transforms (ImageNet normalization)
+    transform = get_classifier_transforms(augment=False)
+    
+    dataset = ISICDataset(image_paths, labels, transform=transform)
+    
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        pin_memory=True if torch.cuda.is_available() else False
+    )
+
 if __name__ == '__main__':
     # Create splits
     print("="*60)

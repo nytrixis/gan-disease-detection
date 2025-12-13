@@ -55,7 +55,7 @@ def train_classifier(mode='baseline', architecture='resnet50', epochs=50):
     model = get_model(architecture).to(device)
 
     # Loss with class weights (imbalance handling)
-    class_weights = torch.tensor([1.0, 54.0]).to(device)  # [nevus, dermatofibroma]
+    class_weights = torch.tensor([1.0, 56.7]).to(device)  # [nevus, dermatofibroma]
     criterion = nn.CrossEntropyLoss(weight=class_weights)
 
     # Optimizer
@@ -63,13 +63,21 @@ def train_classifier(mode='baseline', architecture='resnet50', epochs=50):
 
     # DataLoaders
     augment = (mode == 'traditional_aug')
-    train_loader = get_dataloader('train', batch_size=16, shuffle=True, augment=augment)
-    val_loader = get_dataloader('val', batch_size=16, shuffle=False, augment=False)
-
-    # If GAN augmentation, add synthetic images (simplified - would need mixing logic)
+    
     if mode == 'gan_aug':
-        print("Note: GAN augmentation requires manual mixing of synthetic images")
-        print("Using standard training for now\n")
+        # Load dataset with GAN-augmented images
+        from preprocessing.data_loader import get_gan_augmented_dataloader
+        train_loader = get_gan_augmented_dataloader(
+            'train', 
+            synthetic_dir='data/synthetic/curated',
+            batch_size=16, 
+            shuffle=True
+        )
+        print(f"✓ Using GAN-augmented dataset (real + synthetic images)")
+    else:
+        train_loader = get_dataloader('train', batch_size=16, shuffle=True, augment=augment)
+    
+    val_loader = get_dataloader('val', batch_size=16, shuffle=False, augment=False)
 
     print(f"Train samples: {len(train_loader.dataset)}")
     print(f"Val samples: {len(val_loader.dataset)}\n")
