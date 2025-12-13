@@ -7,10 +7,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torchvision.utils import save_image
+import numpy as np
 import os
 import sys
 from pathlib import Path
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
@@ -81,6 +83,11 @@ def train_wgan_gp():
     Path('data/synthetic/raw').mkdir(parents=True, exist_ok=True)
     Path('results/checkpoints/wgan_gp').mkdir(parents=True, exist_ok=True)
     Path('results/samples').mkdir(parents=True, exist_ok=True)
+    Path('logs/wgan_gp').mkdir(parents=True, exist_ok=True)
+    
+    # Initialize TensorBoard writer
+    writer = SummaryWriter('logs/wgan_gp')
+    print("✓ TensorBoard logging enabled: logs/wgan_gp")
 
     # Initialize models
     generator = Generator(latent_dim=HYPERPARAMETERS['latent_dim']).to(device)
@@ -164,6 +171,11 @@ def train_wgan_gp():
                 'G_loss': f"{loss_gen.item():.4f}",
                 'W_dist': f"{wasserstein_distance.item():.4f}"
             })
+            
+            # Log to TensorBoard
+            writer.add_scalar('Loss/Critic', np.mean(critic_losses), global_step)
+            writer.add_scalar('Loss/Generator', loss_gen.item(), global_step)
+            writer.add_scalar('Wasserstein_Distance', wasserstein_distance.item(), global_step)
 
             # Save samples
             if global_step % HYPERPARAMETERS['sample_interval'] == 0:
@@ -195,6 +207,9 @@ def train_wgan_gp():
         'generator_state_dict': generator.state_dict(),
         'critic_state_dict': critic.state_dict(),
     }, 'results/checkpoints/wgan_gp/final_model.pth')
+    
+    # Close TensorBoard writer
+    writer.close()
 
     print("\n" + "="*60)
     print("✓ Training complete!")

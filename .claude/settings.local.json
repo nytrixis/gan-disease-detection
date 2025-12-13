@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c:*)",
+      "Bash(ls:*)",
+      "Bash(pip show:*)",
+      "Bash(kaggle datasets list:*)",
+      "Bash(unzip:*)",
+      "Bash(wc:*)",
+      "Bash(head:*)",
+      "Bash(conda info:*)"
+    ]
+  }
+}
