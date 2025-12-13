@@ -1,0 +1,47 @@
+# WGAN-GP Configuration
+
+# Data
+data:
+  dataset_path: "data/splits/train/dermatofibroma"
+  image_size: 256
+  channels: 3
+  batch_size: 16
+  num_workers: 4
+
+# Model Architecture
+model:
+  latent_dim: 100
+  generator_features: 16
+  discriminator_features: 16
+
+# Training
+training:
+  num_epochs: 240
+  total_iterations: 50000
+  learning_rate_generator: 0.0001
+  learning_rate_critic: 0.0001
+  beta1: 0.5
+  beta2: 0.999
+  lambda_gp: 10
+  critic_iterations: 5
+
+# Checkpointing
+checkpoint:
+  save_interval: 5000
+  sample_interval: 1000
+  checkpoint_dir: "results/checkpoints/wgan_gp"
+
+# Logging
+logging:
+  tensorboard: true
+  log_dir: "logs/wgan_gp"
+  wandb: false
+  wandb_project: "gan-disease-detection"
+
+# Device
+device:
+  use_cuda: true
+  gpu_id: 0
+
+# Random Seed
+seed: 42
