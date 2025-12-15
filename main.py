@@ -85,6 +85,22 @@ def main():
         )
         
         import json
+        import numpy as np
+        
+        # Convert numpy types to native Python types for JSON serialization
+        def convert_to_native(obj):
+            if isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, dict):
+                return {key: convert_to_native(value) for key, value in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_to_native(item) for item in obj]
+            return obj
+        
+        results = convert_to_native(results)
+        
         Path('results/tables').mkdir(parents=True, exist_ok=True)
         with open('results/tables/gan_metrics.json', 'w') as f:
             json.dump(results, f, indent=4)
