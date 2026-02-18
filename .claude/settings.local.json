@@ -8,7 +8,13 @@
       "Bash(unzip:*)",
       "Bash(wc:*)",
       "Bash(head:*)",
-      "Bash(conda info:*)"
+      "Bash(conda info:*)",
+      "Bash(where:*)",
+      "Bash(find:*)",
+      "Bash(powershell.exe -Command \"Get-ChildItem -Path ''C:$Recycle.Bin'' -Recurse -Force -ErrorAction SilentlyContinue | Where-Object {$_Name -like ''*.png'' -or $_Name -like ''*.pth''} | Select-Object -First 10 FullName\")",
+      "Bash(python:*)",
+      "Bash(conda run:*)",
+      "Bash(conda run -n gan-disease python:*)"
     ]
   }
 }

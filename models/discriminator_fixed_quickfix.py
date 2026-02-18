@@ -1,7 +1,11 @@
 """
-Discriminator/Critic architecture for WGAN-GP
-Takes 256x256x3 images and outputs single scalar (Wasserstein distance estimate)
-Uses Spectral Normalization for improved Lipschitz constraint
+Discriminator QUICK FIX - Removes InstanceNorm that breaks WGAN-GP
+This should improve FID from 257 to ~150-180
+
+CHANGES FROM ORIGINAL:
+1. Removed ALL InstanceNorm layers (breaks Lipschitz constraint)
+2. Kept only Spectral Normalization (correct for WGAN-GP)
+3. Same architecture otherwise
 """
 
 import torch
@@ -12,7 +16,8 @@ class Discriminator(nn.Module):
     def __init__(self, img_channels=3, features_d=16):
         super(Discriminator, self).__init__()
 
-        # All Conv2d layers wrapped with spectral_norm for Lipschitz constraint
+        # All Conv2d layers wrapped with spectral_norm ONLY
+        # NO InstanceNorm - it breaks WGAN-GP's Lipschitz constraint!
         self.model = nn.Sequential(
             # 256x256x3 -> 128x128x32
             spectral_norm(nn.Conv2d(img_channels, 32, kernel_size=4, stride=2, padding=1)),
@@ -20,28 +25,23 @@ class Discriminator(nn.Module):
 
             # 128x128x32 -> 64x64x64
             spectral_norm(nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1)),
-            nn.InstanceNorm2d(64, affine=True),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),  # ← REMOVED InstanceNorm
 
             # 64x64x64 -> 32x32x128
             spectral_norm(nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1)),
-            nn.InstanceNorm2d(128, affine=True),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),  # ← REMOVED InstanceNorm
 
             # 32x32x128 -> 16x16x256
             spectral_norm(nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1)),
-            nn.InstanceNorm2d(256, affine=True),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),  # ← REMOVED InstanceNorm
 
             # 16x16x256 -> 8x8x512
             spectral_norm(nn.Conv2d(256, 512, kernel_size=4, stride=2, padding=1)),
-            nn.InstanceNorm2d(512, affine=True),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),  # ← REMOVED InstanceNorm
 
             # 8x8x512 -> 4x4x1024
             spectral_norm(nn.Conv2d(512, 1024, kernel_size=4, stride=2, padding=1)),
-            nn.InstanceNorm2d(1024, affine=True),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2, inplace=True),  # ← REMOVED InstanceNorm
 
             # 4x4x1024 -> 1x1x1
             spectral_norm(nn.Conv2d(1024, 1, kernel_size=4, stride=1, padding=0))
@@ -65,4 +65,5 @@ if __name__ == '__main__':
     output = disc(img)
 
     print(f"Discriminator output shape: {output.shape}")
-    print(f"✓ Discriminator test passed!")
+    print(f"✓ Discriminator Quick Fix test passed!")
+    print(f"✓ NO InstanceNorm - WGAN-GP compatible")

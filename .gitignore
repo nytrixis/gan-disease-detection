@@ -33,10 +33,8 @@ wheels/
 checkpoints/
 
 # Data
-data/raw/
-data/processed/
-data/splits/
-data/synthetic/
+data/
+ISIC_2019_Test_Input/
 *.csv
 *.h5
 *.hdf5
@@ -63,3 +61,36 @@ results/
 *.tar.gz
 *.pkl
 *.pickle
+
+# Claude assistant files
+.claude/
+
+# Documentation except main README
+CLAUDE_CODE_PROMPT.md
+DATASET_SETUP_INSTRUCTIONS.md
+PROJECT_STATUS_SUMMARY.md
+QUICKFIX_README.md
+QUICKSTART.md
+QUICK_START_534_IMAGES.md
+README_OLD.md
+
+# Temporary/helper/test scripts
+check_images.py
+check_test_df.py
+check_training_df.py
+cleanup_experimental_files.bat
+generate_comparison_table.py
+organize_all_df_datasets.py
+organize_isic2019.py
+run_complete_pipeline.py
+verify_setup.py
+use_all_training_data.py
+resume_training.py
+train_clean.py
+train_direct.bat
+train_quickfix.py
+setup_environment.sh
+setup_project.sh
+download_dataset.sh
+training_output.log
+nul

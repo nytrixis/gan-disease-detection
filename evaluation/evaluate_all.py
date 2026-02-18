@@ -15,6 +15,7 @@ import json
 
 sys.path.append(str(Path(__file__).parent.parent))
 from preprocessing.data_loader import get_dataloader
+from preprocessing.isic_test_loader import get_isic_test_loader
 
 def load_model(checkpoint_path, architecture='resnet50'):
     """Load trained model from checkpoint"""
@@ -61,6 +62,42 @@ def evaluate_model(model, test_loader, device):
 
     return metrics, all_preds, all_labels
 
+def evaluate_single_model(model_name, checkpoint_path, test_data_dir='data/splits/test', architecture='resnet50'):
+    """
+    Evaluate a single model
+
+    Args:
+        model_name: Name of the model
+        checkpoint_path: Path to model checkpoint
+        test_data_dir: Test data directory (DEPRECATED - using ISIC 2019 actual test set)
+        architecture: Model architecture
+
+    Returns:
+        dict: Evaluation metrics
+    """
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"Evaluating {model_name} on {device}\n")
+
+    # Test DataLoader (ACTUAL ISIC 2019 test set, not training splits)
+    test_loader = get_isic_test_loader(batch_size=16)
+    
+    # Load and evaluate
+    model = load_model(checkpoint_path, architecture).to(device)
+    metrics, preds, labels = evaluate_model(model, test_loader, device)
+    
+    # Print results
+    print(f"\nResults for {model_name}:")
+    print(f"  Accuracy:  {metrics['accuracy']:.4f} ({metrics['accuracy']*100:.2f}%)")
+    print(f"  Precision: {metrics['precision']:.4f}")
+    print(f"  Recall:    {metrics['recall']:.4f}")
+    print(f"  F1-Score:  {metrics['f1_score']:.4f}")
+    print(f"\nConfusion Matrix:")
+    cm = np.array(metrics['confusion_matrix'])
+    print(f"  [[TN={cm[0][0]}, FP={cm[0][1]}],")
+    print(f"   [FN={cm[1][0]}, TP={cm[1][1]}]]")
+    
+    return {model_name: metrics}
+
 def main():
     print("="*70)
     print(" MODEL EVALUATION")
@@ -69,9 +106,9 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Device: {device}\n")
 
-    # Test DataLoader
-    test_loader = get_dataloader('test', batch_size=16, shuffle=False)
-    print(f"Test samples: {len(test_loader.dataset)}\n")
+    # Test DataLoader (ACTUAL ISIC 2019 test set - 91 DF + 2495 NV = 2586 images)
+    test_loader = get_isic_test_loader(batch_size=16)
+    print(f"Test samples: {len(test_loader.dataset)} (ISIC 2019 actual test set)\n")
 
     # Models to evaluate
     models_to_eval = [

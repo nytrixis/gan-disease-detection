@@ -33,14 +33,15 @@ def get_model(architecture='resnet50'):
 
     return model
 
-def train_classifier(mode='baseline', architecture='resnet50', epochs=50):
+def train_classifier(mode='baseline', architecture='resnet50', epochs=50, synthetic_data_dir=None):
     """
     Train CNN classifier
 
     Args:
-        mode: 'baseline', 'traditional_aug', or 'gan_aug'
+        mode: 'baseline', 'traditional_aug', 'gan_aug', or 'acgan_aug'
         architecture: 'resnet50', 'densenet121', or 'efficientnet_b0'
         epochs: number of training epochs
+        synthetic_data_dir: Custom directory for synthetic images (for gan_aug mode)
     """
 
     print("="*60)
@@ -55,7 +56,8 @@ def train_classifier(mode='baseline', architecture='resnet50', epochs=50):
     model = get_model(architecture).to(device)
 
     # Loss with class weights (imbalance handling)
-    class_weights = torch.tensor([1.0, 56.7]).to(device)  # [nevus, dermatofibroma]
+    # Updated for 545 DF samples: 12875/545 = 23.6
+    class_weights = torch.tensor([1.0, 23.6]).to(device)  # [nevus, dermatofibroma]
     criterion = nn.CrossEntropyLoss(weight=class_weights)
 
     # Optimizer
@@ -65,15 +67,27 @@ def train_classifier(mode='baseline', architecture='resnet50', epochs=50):
     augment = (mode == 'traditional_aug')
     
     if mode == 'gan_aug':
-        # Load dataset with GAN-augmented images
+        # Load dataset with GAN-augmented images (WGAN-GP or WGAN-GP Revised)
         from preprocessing.data_loader import get_gan_augmented_dataloader
+        synthetic_dir = synthetic_data_dir or 'data/synthetic/curated'
         train_loader = get_gan_augmented_dataloader(
             'train', 
-            synthetic_dir='data/synthetic/curated',
+            synthetic_dir=synthetic_dir,
             batch_size=16, 
             shuffle=True
         )
-        print(f"✓ Using GAN-augmented dataset (real + synthetic images)")
+        print(f"✓ Using GAN-augmented dataset")
+        print(f"  Synthetic images from: {synthetic_dir}")
+    elif mode == 'acgan_aug':
+        # Load dataset with AC-GAN augmented images
+        from preprocessing.data_loader import get_gan_augmented_dataloader
+        train_loader = get_gan_augmented_dataloader(
+            'train', 
+            synthetic_dir='data/synthetic_acgan/filtered',
+            batch_size=16, 
+            shuffle=True
+        )
+        print(f"✓ Using AC-GAN augmented dataset (class-conditional synthetic images)")
     else:
         train_loader = get_dataloader('train', batch_size=16, shuffle=True, augment=augment)
     
@@ -85,7 +99,7 @@ def train_classifier(mode='baseline', architecture='resnet50', epochs=50):
     # Training loop
     best_f1 = 0
     patience_counter = 0
-    max_patience = 10
+    max_patience = 15
 
     for epoch in range(epochs):
         # Train
